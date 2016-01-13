@@ -27,6 +27,7 @@ graph = Graph()
 
 arguments=sys.argv[1:]
 for dirname in arguments :
+	if not dirname.endswith("/") :dirname = dirname + "/"
 	print "loading graph files from folder " + str(dirname)
 	files = os.listdir(dirname)
 	graph.loadFromDir(dirname)

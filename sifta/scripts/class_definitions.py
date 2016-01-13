@@ -535,7 +535,9 @@ class Graph:
         for f in filtermappings:
             sinks = f.find("Sinks").findall("Sink")
             hash = f.attrib["hash"]
-            self.filterToSinkMapping[hash] = set()
+            #self.filterToSinkMapping[hash] = set()
+            if (not hash in self.filterToSinkMapping):
+                self.filterToSinkMapping[hash] = set()
             for s in sinks:
                 self.filterToSinkMapping[hash].add(s.text)
 
@@ -547,11 +549,14 @@ class Graph:
 
         for node in nodes.findall("Node"):
             hash = node.attrib["hash"]
-            self.nodes[hash] = set()
+            if not (hash in self.nodes.keys()):
+                self.nodes[hash] = set()
             for edge in node.findall("Edge"):
                 tohash = edge.attrib["to"]
                 self.nodes[hash].add(tohash)
-                self.edges[(hash, tohash)] = set()
+                #self.edges[(hash, tohash)] = set()
+                if not (hash, tohash) in self.edges.keys():
+                    self.edges[(hash, tohash)] = set()
                 for app in edge.find("Apps").findall("App"):
                     self.edges[(hash, tohash)].add(app.text)
 
@@ -564,8 +569,12 @@ class Graph:
             apps = intent.find("Apps").findall("App")
             for app in apps:
                 appSet.add(app.text)
-
-            self.intents[intent.attrib["hash"]] = appSet
+            
+            #self.intents[intent.attrib["hash"]] = appSet
+            if not (intent.attrib["hash"] in self.intents):
+                self.intents[intent.attrib["hash"]] = appSet
+            else :
+                self.intents[intent.attrib["hash"]] = appSet.union(self.intents[intent.attrib["hash"]])
 
         intentresultmappings = mappingXML.find("IntentResultToAppMapping").findall("IntentResult")
 
@@ -575,5 +584,8 @@ class Graph:
             apps = intentresult.find("Apps").findall("App")
             for app in apps:
                 appSet.add(app.text)
-
-            self.onResult[intentresult.attrib["hash"]] = appSet
+            #self.onResult[intentresult.attrib["hash"]] = appSet
+            if not (intentresult.attrib["hash"] in self.onResult) :
+                self.onResult[intentresult.attrib["hash"]] = appSet
+            else :
+                self.onResult[intentresult.attrib["hash"]] = appSet.union(self.onResult[intentresult.attrib["hash"]])
