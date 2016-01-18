@@ -145,7 +145,7 @@ class IntentFilter(ParentObject):
         self.priority = priority
 
     def __str__(self):
-        return "IntentFilter(\n{}\n)".format(self.intentDefinition)
+        return "IntentFilter(\n{}\nin App {}\n)".format(self.intentDefinition, self.app)
 
     def to_xml(self):
         intent = Element('IntentFilter', app = self.app, priority = str(self.priority))
