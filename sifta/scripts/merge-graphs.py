@@ -14,6 +14,8 @@ from collections import OrderedDict
 from epicc_parser import parse_epicc
 from class_definitions import *
 import copy
+#from compute-graph import FlowSolver, GraphBuilder
+compute_graph = __import__("compute-graph")
 
 script_path = os.path.dirname(os.path.realpath(__file__))
 android_pfx = "{http://schemas.android.com/apk/res/android}"
@@ -26,9 +28,16 @@ FlowdroidElement = namedtuple("FlowdroidElement", ["componentType", "component",
 graph = Graph()
 
 arguments=sys.argv[1:]
+
+flowSolver = compute_graph.FlowSolver(list())
+
 for dirname in arguments :
 	if not dirname.endswith("/") :dirname = dirname + "/"
 	print "loading graph files from folder " + str(dirname)
 	files = os.listdir(dirname)
 	graph.loadFromDir(dirname)
+
+
+graphBuilder = compute_graph.GraphBuilder([], flowSolver)
+graph = graphBuilder.createGraph()
 graph.save()

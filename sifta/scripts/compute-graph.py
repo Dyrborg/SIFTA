@@ -43,15 +43,15 @@ class FlowSolver:
         if not(sys.version_info[0] == 2 and sys.version_info[1] >= 7):
             self.die("Incompatible version of Python! This script needs Python 2.7.")
 
-        if len(arguments[1:]) == 0:
-            sys.stderr.write(
-                ("Usage: %s [OPTIONS] [FILES]\n" % (sys.argv[0],)) +
-                "Files: For each app, should include manifest, epicc, and flowdroid output.\n" +
-                #"       To override package name, use 'pkg:filename' (UNTESTED).\n" +
-                "Options: \n" +
-                "  --unsound select the precision of the intent matching\n"
-            )
-            self.die("")
+        #if len(arguments[1:]) == 0:
+        #    sys.stderr.write(
+        #        ("Usage: %s [OPTIONS] [FILES]\n" % (sys.argv[0],)) +
+        #        "Files: For each app, should include manifest, epicc, and flowdroid output.\n" +
+        #        #"       To override package name, use 'pkg:filename' (UNTESTED).\n" +
+        #        "Options: \n" +
+        #        "  --unsound select the precision of the intent matching\n"
+        #    )
+        #    self.die("")
 
         fileNames = []
         #args = iter(arguments[1:])
@@ -392,7 +392,6 @@ class FlowSolver:
                     if intentForFilterHash not in self.graph.intents:
                         self.graph.intents[intentForFilterHash] = set()
                     self.graph.intents[intentForFilterHash].add("")
-                    print "Extra hash added: %s -> %s"%(intentForFilterHash,intentForFilter)
                         
                 elif isinstance(flow.source, IntentResult):
                     if sourceHash not in self.graph.onResult:
