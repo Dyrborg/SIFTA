@@ -54,7 +54,8 @@ class FlowSolver:
             self.die("")
 
         fileNames = []
-        args = iter(arguments[1:])
+        #args = iter(arguments[1:])
+        args = iter(arguments) # first argument is a file, too!
 
         # parse arguments to a list of file names, and set the parameters into fields
         for arg in args:
@@ -372,9 +373,9 @@ class FlowSolver:
                     continue
 
                 if isinstance(flow.sink, Intent):
-                    intentHash = flow.sink.get_md5hash()
+                    #intentHash = flow.sink.get_md5hash() # intentHash == sinkHash
                     if "android.intent.action.MAIN" not in flow.sink.intentDefinition.actions:
-                        if intentHash not in self.graph.intents:
+                        if sinkHash not in self.graph.intents:
                             self.graph.intents[sinkHash] = set()
                         self.graph.intents[sinkHash].add(flow.source.app)
                         if not isinstance(flow.source, IntentFilter):
@@ -383,6 +384,16 @@ class FlowSolver:
                     if sourceHash not in self.graph.filterToSinkMapping:
                         self.graph.filterToSinkMapping[sourceHash] = set()
                     self.graph.filterToSinkMapping[sourceHash].add(sinkHash)
+                    
+                    # add an intent that would trigger this filter to the graph (even if such an intent is never created by an app, it is there)
+                    intentForFilter = Intent(intentDefinition = flow.source.intentDefinition, app = "")
+                    intentForFilterHash = intentForFilter.get_md5hash()
+                    self.graph.hashToObjectMapping[intentForFilterHash] = intentForFilter
+                    if intentForFilterHash not in self.graph.intents:
+                        self.graph.intents[intentForFilterHash] = set()
+                    self.graph.intents[intentForFilterHash].add("")
+                    print "Extra hash added: %s -> %s"%(intentForFilterHash,intentForFilter)
+                        
                 elif isinstance(flow.source, IntentResult):
                     if sourceHash not in self.graph.onResult:
                         self.graph.onResult[sourceHash] = set()
