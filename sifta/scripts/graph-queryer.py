@@ -248,7 +248,7 @@ def drawGraph():
                 pass
             before = hash
     print "Nodes in flows: %i" % len(seenBefore)
-    print "Edges in flows: %i" % len(edges)
+    print "Edges in flows: %i" % len(seenEdges)
     if (largestPCsize>0):
         print "Largest PC Size: %i" % largestPCsize
         print "on Edge: " + str(edgeWithlargestPCsize[0]) + str(edgeWithlargestPCsize[1])
@@ -422,6 +422,148 @@ def printFlows(flows):
             i += 1
 
 
+def printSpecificEdgeStats():
+    fromHash="fbc53f89072658fdc7da80d942bdfde9"
+    toHash="da18b05c673b837a26e56acbbd4f7f5e"
+    if (graph.edges[fromHash,toHash]) :
+        print "edge %s to %s exists\n"%(fromHash,toHash)
+        print "From %s\n"%graph.hashToObjectMapping[fromHash]
+        print "To %s\n"%graph.hashToObjectMapping[toHash]
+        print "Apps %s\n"%graph.edges[fromHash,toHash]
+    
+def printSpecificAppStats():
+	#searchApp="com.merunetworks.IdentityWifi" ##com.merunetworks.
+	#searchApp="air.com.doitflash.ar.atelier"
+	searchApp="com.nixpa.kik.sketchee"
+	
+	print "\n%s on graph edges: " % searchApp
+	for ((hashFrom,hashTo), apps) in graph.edges.iteritems():
+		if searchApp in apps:
+			fromObj = graph.hashToObjectMapping[hashFrom]
+			toObj = graph.hashToObjectMapping[hashTo]
+			print (searchApp, " in ", fromObj.__str__(),  "app:", fromObj.app, " to ", toObj.__str__(), "app:", toObj.app, "\n")
+	print "\n%s on graph nodes: " % searchApp
+	for node in graph.nodes:
+		nodeObj = graph.hashToObjectMapping[node]
+		#if isinstance(nodeObj, Source):
+			#
+		#elif isinstance(nodeObj, Sink):
+			#
+		if isinstance(nodeObj, Intent):
+			if nodeObj.app == searchApp : #"com.rekonsult.MTFashionAlert" :
+				print nodeObj
+		elif isinstance(nodeObj, IntentResult):
+			if nodeObj.app == searchApp :
+				print nodeObj
+	print "\n"
+	
+def printSpecificNodeStats():
+	searchHash="0b49a5484aabba98d1bef07f8f30ba59"
+	if searchHash in graph.nodes.keys(): print "HASH is in graph.nodes"
+	else: print "HASH is NOT in graph.nodes"
+	nodeObj = graph.hashToObjectMapping[searchHash]
+	if (nodeObj) :
+		print "Node %s:\n %s\n" %(searchHash, nodeObj.__str__())
+		incoming=list()
+		outgoing=list()
+		for ((hashFrom,hashTo), apps) in graph.edges.iteritems():
+			if hashFrom==searchHash:
+				outgoing.append(((hashFrom,hashTo), apps))
+			if hashTo==searchHash:
+				incoming.append(((hashFrom,hashTo), apps))
+		print "Incoming Edges (%d)\n"%len(incoming)
+		for ((hashFrom,hashTo), apps) in incoming:
+			fromObj = graph.hashToObjectMapping[hashFrom]
+			print ("From: %s, hash:%s  app: %s\n"%(fromObj.__str__(),hashFrom, apps))
+		print "Outgoing Edges (%d)\n"%len(outgoing)
+		for ((hashFrom,hashTo), apps) in outgoing:
+			toObj = graph.hashToObjectMapping[hashTo]
+			print ("To: %s, hash:%s  app: %s\n"%(toObj.__str__(),hashTo, apps))
+		print "\n"
+	else: print "Hash %s not found"%searchHash
+	
+
+def checkNoEmptyEdges():
+	for ((hashFrom,hashTo), apps) in graph.edges.iteritems():
+		if not apps : #apps is empty
+			fromObj = graph.hashToObjectMapping[hashFrom]
+			toObj = graph.hashToObjectMapping[hashTo]
+			print "Empty Edge from %s \nto%s"%(fromObj.__str__(),toObj.__str__())
+	print "\n"
+	
+def checkNodeApps():
+	for node in graph.nodes:
+		nodeObj = graph.hashToObjectMapping[node]
+		#if isinstance(nodeObj, Source):
+			#
+		#elif isinstance(nodeObj, Sink):
+			#
+		if isinstance(nodeObj, Intent): ## assumption: app should be on incoming
+			incoming=set()
+			outgoing=set()
+			for ((hashFrom,hashTo), apps) in graph.edges.iteritems():
+				if hashTo == node : incoming = incoming.union(apps)
+				if hashFrom == node : outgoing = outgoing.union(apps)
+			if (not (nodeObj.app in incoming)):
+				print "Intent node; app %s not on incoming HASH: %s \n" % (nodeObj.app , node)
+				print " incoming apps: %s\n" % incoming
+				print " outgoing apps: %s\n" % outgoing
+		elif isinstance(nodeObj, IntentResult):
+			incoming=set()
+			outgoing=set()
+			for ((hashFrom,hashTo), apps) in graph.edges.iteritems():
+				if hashTo == node : incoming = incoming.union(apps)
+				if hashFrom == node : outgoing = outgoing.union(apps)
+			if (not (nodeObj.app in incoming)):
+				print "IntentResult node; app %s not on incoming HASH: %s \n" % (nodeObj.app , node)
+				print " incoming apps: %s\n" % incoming
+				print " outgoing apps: %s\n" % outgoing
+		#elif isinstance(nodeObj, IntentFilter):
+			#print "IntentFilter node with app %s\n" % nodeObj.app
+			#for ((hashFrom,hashTo), apps) in graph.edges.iteritems():
+				#if hashTo == node :
+					#print " incoming apps: %s\n" % apps 
+				#if hashFrom == node :
+					#print " outgoing apps: %s\n" % apps 
+	print "\n"
+
+def countBarbells(): # count how many of these constructs are in the graph: 0-0 (two nodes, connected by one edge but without connections to the rest of the graph; looks like a barbell)
+	count=0
+	for node in graph.nodes:
+		nodeObj = graph.hashToObjectMapping[node]
+		incoming=0
+		invalid = 0
+		if not isinstance(nodeObj,Source):
+			nextHasOutgoing=0
+			for ((hashFrom,hashTo), apps) in graph.edges.iteritems():
+				if hashTo == node : incoming+=1
+				if hashFrom == node :
+						nextNodeObj = graph.hashToObjectMapping[node]
+						if not isinstance(nodeObj,Sink):
+							for ((hashFrom2,hashTo2), apps) in graph.edges.iteritems():
+								if (hashFrom2 == hashTo):
+									nextHasOutgoing+=1
+						else: invalid=1
+		else: invalid=1
+		if invalid==0 and incoming==0 and nextHasOutgoing==0:
+			count+=1
+	print "Barbells: %d" % count
+		#elif isinstance(nodeObj, IntentResult):
+			#print "IntentResult node with app %s\n" % nodeObj.app
+			#for ((hashFrom,hashTo), apps) in graph.edges.iteritems():
+				#if hashTo == node :
+					#print " incoming apps: %s\n" % apps 
+				#if hashFrom == node :
+					#print " outgoing apps: %s\n" % apps 
+		#elif isinstance(nodeObj, IntentFilter):
+			#print "IntentFilter node with app %s\n" % nodeObj.app
+			#for ((hashFrom,hashTo), apps) in graph.edges.iteritems():
+				#if hashTo == node :
+					#print " incoming apps: %s\n" % apps 
+				#if hashFrom == node :
+					#print " outgoing apps: %s\n" % apps 
+	print "\n"
+
 def main(args):
     global pcapps
     global outputseverity
@@ -468,6 +610,27 @@ def main(args):
         
     print "Running querier with algorithm: %s" % algorithm
 
+    #printSpecificEdgeStats()
+    #printSpecificAppStats()
+    #printSpecificNodeStats()
+    #checkNodeApps()
+    #countBarbells()
+    #checkNoEmptyEdges()
+    
+    #return
+    
+    print ("Graph: %s nodes, %s edges"%(len(graph.nodes), len(graph.edges)))
+    '''
+    nodesFile = open("nodes.txt", 'w')
+    for node in sorted(graph.nodes):
+        nodesFile.write("Node %s: %s\n"%(node,graph.hashToObjectMapping[node]))
+    nodesFile.close()
+    edgesFile = open("edges.txt", 'w')
+    for (fromhash,tohash) in sorted(graph.edges) :
+        edgesFile.write("Edge %s to %s\n"%(fromhash,tohash))
+    edgesFile.close()
+    '''
+
     for node in graph.sources:
         global visitedEdges
         visitedEdges = set()
@@ -479,6 +642,8 @@ def main(args):
             print ("more than %i flows. breaking off!" % breakOffFlowCount)
             break
         
+
+    
     if len(allFlows)==0:
         print("0 flows found!")
     else:
