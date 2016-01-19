@@ -1,19 +1,9 @@
-#       IntentDefinition(String[] actions, String[] category, String mimeType, String data, String packageName)
-#
-#		Intent(IntentDefinition intentDef, String component, String app)
-#	    IntentFilter(IntentDefinition intentDef, String component, Int priority, String app)
-#		IntentResult(Intent intent, String app) evt from and to?
-#		Source(String app, String method)
-#		Sink(String app, String method)
-#
-#		Flow(Object sender, Object reciever)
-#
-
 from collections import *
 from collections import OrderedDict
 from epicc_parser import parse_epicc
 from class_definitions import *
 import copy
+
 
 script_path = os.path.dirname(os.path.realpath(__file__))
 android_pfx = "{http://schemas.android.com/apk/res/android}"
@@ -22,6 +12,7 @@ INTENT = 0
 INTENT_RESULT = 1
 
 FlowdroidElement = namedtuple("FlowdroidElement", ["componentType", "component", "intentId", "type"])
+
 
 ''' The FlowSolver reads the data produced by flowdroid and epicc and prepares it for insertion in the graph. ''' 
 class FlowSolver:
@@ -385,14 +376,14 @@ class FlowSolver:
                         self.graph.filterToSinkMapping[sourceHash] = set()
                     self.graph.filterToSinkMapping[sourceHash].add(sinkHash)
                     
-                    # add an intent that would trigger this filter to the graph (even if such an intent is never created by an app, it is there)
+                    '''# add an intent that would trigger this filter to the graph (even if such an intent is never created by an app, it is there)
                     intentForFilter = Intent(intentDefinition = flow.source.intentDefinition, app = "")
                     intentForFilterHash = intentForFilter.get_md5hash()
                     self.graph.hashToObjectMapping[intentForFilterHash] = intentForFilter
                     if intentForFilterHash not in self.graph.intents:
                         self.graph.intents[intentForFilterHash] = set()
                     self.graph.intents[intentForFilterHash].add("")
-                        
+                        '''
                 elif isinstance(flow.source, IntentResult):
                     if sourceHash not in self.graph.onResult:
                         self.graph.onResult[sourceHash] = set()
@@ -795,41 +786,3 @@ class GraphBuilder:
             if srcHash in self.graph.nodes and sinkHash in self.graph.nodes: # and isProperIntentOrString(src):
                 self.graph.nodes[srcHash].add(sinkHash)
         return self.graph
-
-inputFolder=sys.argv[1]
-print "loading graph generation input files from folder " + str(inputFolder)
-
-fileList=[]
-'''
-Files are loaded if files with the same prefix and endings
-.epicc ,
-.fd.xml , and
-.manifest.xml
-exist.
-'''
-for fileName in os.listdir(inputFolder):
-    if fileName.endswith(".epicc"):
-        basename=fileName[:-len(".epicc")]
-        manifestFileName=basename+".manifest.xml"
-        fdFileName=basename+".fd.xml"
-        if (os.path.isfile(fdFileName) and os.path.isfile(manifestFileName)):
-            fileList.append(fileName)
-            fileList.append(manifestFileName)
-            fileList.append(fdFileName)
-            
-#flowSolver = FlowSolver(sys.argv)
-flowSolver = FlowSolver(fileList)
-graphBuilder = GraphBuilder([], flowSolver)
-graph = graphBuilder.createGraph()
-
-print "Number of failed apps: " + str(flowSolver.errorcount)
-
-'''
-Niklas: all Sources are private and contain sensitive information in some way.
-The taintpropagation will be done after "graph.save()". However we will probably
-structure this a little differently with all the graph construction code in one file
-and the taint analysis / graph querying in another. Since we are now persisting the
-graph, it is possible to load only that (and not redo graph construction) to get the
-tainted flows.
-'''
-graph.save()
