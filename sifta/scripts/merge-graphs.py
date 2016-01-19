@@ -14,8 +14,8 @@ from collections import OrderedDict
 from epicc_parser import parse_epicc
 from class_definitions import *
 import copy
-#from compute-graph import FlowSolver, GraphBuilder
-compute_graph = __import__("compute-graph")
+#from graph_generation_lib import FlowSolver, GraphBuilder
+import graph_generation_lib
 
 script_path = os.path.dirname(os.path.realpath(__file__))
 android_pfx = "{http://schemas.android.com/apk/res/android}"
@@ -29,7 +29,7 @@ graph = Graph()
 
 arguments=sys.argv[1:]
 
-flowSolver = compute_graph.FlowSolver(list())
+flowSolver = graph_generation_lib.FlowSolver(list())
 
 for dirname in arguments :
 	if not dirname.endswith("/") :dirname = dirname + "/"
@@ -38,6 +38,6 @@ for dirname in arguments :
 	graph.loadFromDir(dirname)
 
 
-graphBuilder = compute_graph.GraphBuilder([], flowSolver)
+graphBuilder = graph_generation_lib.GraphBuilder([], flowSolver)
 graph = graphBuilder.createGraph()
 graph.save()
